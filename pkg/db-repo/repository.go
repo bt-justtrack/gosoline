@@ -152,7 +152,6 @@ func (r *repository) Create(ctx context.Context, value ModelBased) error {
 	}
 
 	err = r.refreshAssociations(value, Create)
-
 	if err != nil {
 		logger.Error("could not update associations of model type %v: %w", modelId, err)
 		return err
@@ -210,7 +209,6 @@ func (r *repository) Update(ctx context.Context, value ModelBased) error {
 	}
 
 	err = r.refreshAssociations(value, Update)
-
 	if err != nil {
 		logger.Error("could not update associations of model type %s with id %d: %w", modelId, *value.GetId(), err)
 		return err
@@ -239,7 +237,6 @@ func (r *repository) Delete(ctx context.Context, value ModelBased) error {
 	}
 
 	err = r.orm.Delete(value).Error
-
 	if err != nil {
 		logger.Error("could not delete model of type %s with id %d: %w", modelId, *value.GetId(), err)
 	}
@@ -261,7 +258,11 @@ func (r *repository) checkResultModel(result interface{}) error {
 	}
 
 	if refl.IsPointerToSlice(result) {
-		model := reflect.ValueOf(result).Elem().Interface()
+		sliceElemType := reflect.ValueOf(result).Elem().Type().Elem()
+		for sliceElemType.Kind() == reflect.Pointer {
+			sliceElemType = sliceElemType.Elem()
+		}
+		model := reflect.New(sliceElemType).Elem().Interface()
 
 		if !r.isQueryableModel(model) {
 			return fmt.Errorf("cross querying result slice has to be of same model")
